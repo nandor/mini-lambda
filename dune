@@ -1,0 +1,11 @@
+
+(ocamllex lexer)
+
+(menhir
+  (infer false)
+  (modules parser))
+
+
+(executable
+  (name main))
+

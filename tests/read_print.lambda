@@ -1,0 +1,7 @@
+func print_int(x);
+func input_int();
+
+
+func main() {
+  print_int(input_int());
+}

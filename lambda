@@ -1,0 +1,60 @@
+#!/bin/sh
+
+function realpath() {
+    [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+}
+
+function cleanup() {
+  rm -rf "$WORK_DIR"
+}
+
+# A POSIX variable
+OPTIND=1
+
+# Find the directory where the script is located.
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+# Infer the host architecture.
+ARCH=`uname -m`
+
+# Parse the arguments.
+OUTPUT=""
+while getopts "h?o:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    o)  OUTPUT=$OPTARG
+        ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+[ "${1:-}" = "--" ] && shift
+
+# Find the input file.
+INPUT=`realpath $1`
+if test -f "$INPUT"; then
+  # Compile the file.
+  case "$OUTPUT" in
+    "")
+      # Dump assembly to stdout.
+      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT)
+      ;;
+    *)
+      # Create a temporary directory.
+      WORK_DIR=`mktemp -d`
+
+      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT -o $WORK_DIR/lambda.S)
+      gcc -c runtime_x86_64.S -o $WORK_DIR/runtime.o
+      gcc $WORK_DIR/lambda.S $WORK_DIR/runtime.o -o $OUTPUT
+
+      # Link with runtime into a binary.
+      trap cleanup EXIT
+      ;;
+  esac
+else
+  echo "File does not exist: $INPUT"
+fi
