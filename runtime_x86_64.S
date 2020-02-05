@@ -2,13 +2,22 @@
 # Compiler Construction - Minimal Lambda Language
 ################################################################################
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+  #define G(x) x
+#elif __APPLE__
+  #define G(x) _##x
+#elif __linux__
+  #define G(x) x
+#else
+#   error "Unknown compiler"
+#endif
 
 ################################################################################
 # main
 ################################################################################
   .text
-  .global _main
-_main:
+  .global G(main)
+G(main:)
   .global _lambda_main
   jmp _lambda_main
 
@@ -31,7 +40,7 @@ __builtin_input_int:
   # Invoke scanf.
   leaq  scanf_format(%rip), %rdi
   movq  %rsp, %rsi
-  callq _scanf
+  callq G(scanf)
 
   # Load the result.
   movq (%rsp), %rcx
@@ -75,7 +84,7 @@ __builtin_print_int:
   # Invoke printf.
   leaq  printf_format(%rip), %rdi
   movq  16(%rbp), %rsi
-  callq _printf
+  callq G(printf)
   xorq  %rcx, %rcx
 
   # Restore previous frame.
@@ -120,7 +129,7 @@ __builtin_allocate:
   leaq 1(%rcx), %r12
   leaq 16(,%rcx, 8), %rdi
   # Invoke malloc.
-  callq _malloc
+  callq G(malloc)
   # Store header.
   movq %r12, (%rax)
   # Return pointer in %rcx.
