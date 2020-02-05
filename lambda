@@ -1,15 +1,16 @@
 #!/bin/sh
 
-function realpath() {
+realpath() {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
 }
 
-function cleanup() {
+cleanup() {
   rm -rf "$WORK_DIR"
 }
 
-# A POSIX variable
-OPTIND=1
+usage() {
+  echo "$0 [-o OUTPUT] input"
+}
 
 # Find the directory where the script is located.
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -19,23 +20,30 @@ ARCH=`uname -m`
 
 # Parse the arguments.
 OUTPUT=""
-while getopts "h?o:" opt; do
-    case "$opt" in
-    h|\?)
-        show_help
+INPUT=""
+while : ; do
+  case "$1" in
+    "") break;;
+    -h|\?)
+        usage
         exit 0
         ;;
-    o)  OUTPUT=$OPTARG
+    -o)  OUTPUT="$2"
+        shift
         ;;
-    esac
+    *)  INPUT=`realpath $1`
+        ;;
+  esac
+  shift
 done
 
-shift $((OPTIND-1))
-
-[ "${1:-}" = "--" ] && shift
+# Sanitize input
+if [ -z $INPUT ]; then
+  usage
+  exit 1
+fi
 
 # Find the input file.
-INPUT=`realpath $1`
 if test -f "$INPUT"; then
   # Compile the file.
   case "$OUTPUT" in
@@ -49,7 +57,7 @@ if test -f "$INPUT"; then
 
       (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT -o $WORK_DIR/lambda.S)
       gcc -c runtime_x86_64.S -o $WORK_DIR/runtime.o
-      gcc $WORK_DIR/lambda.S $WORK_DIR/runtime.o -o $OUTPUT
+      gcc $WORK_DIR/runtime.o $WORK_DIR/lambda.S -o $OUTPUT
 
       # Link with runtime into a binary.
       trap cleanup EXIT
