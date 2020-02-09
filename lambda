@@ -21,6 +21,7 @@ ARCH=`uname -m`
 # Parse the arguments.
 OUTPUT=""
 INPUT=""
+FLAGS=""
 while : ; do
   case "$1" in
     "") break;;
@@ -30,6 +31,9 @@ while : ; do
         ;;
     -o)  OUTPUT="$2"
         shift
+        ;;
+    -dump-ir)
+        FLAGS="$FLAGS $1"
         ;;
     *)  INPUT=`realpath $1`
         ;;
@@ -49,13 +53,13 @@ if test -f "$INPUT"; then
   case "$OUTPUT" in
     "")
       # Dump assembly to stdout.
-      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT)
+      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT $FLAGS)
       ;;
     *)
       # Create a temporary directory.
       WORK_DIR=`mktemp -d`
 
-      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT -o $WORK_DIR/lambda.S)
+      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT $FLAGS -o $WORK_DIR/lambda.S)
       gcc -c runtime_x86_64.S -o $WORK_DIR/runtime.o
       gcc $WORK_DIR/runtime.o $WORK_DIR/lambda.S -o $OUTPUT
 
