@@ -54,7 +54,7 @@ __builtin_input_int:
 
   .data
 scanf_format:
-  .string "%d"
+  .string "%lld"
 
   .data
   .p2align 2
@@ -100,7 +100,7 @@ __builtin_print_int:
 
   .data
 printf_format:
-  .string "%d\n"
+  .string "%lld\n"
 
   .data
   .global __builtin_print_int_closure
